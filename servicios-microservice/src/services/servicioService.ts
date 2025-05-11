@@ -4,12 +4,18 @@ import * as yup from 'yup';
 import Decimal from 'decimal.js';
 import { IServicio } from '../models/servicio';
 
+// Interfaz para detalles de error
+interface ErrorDetail {
+  field: string;
+  message: string;
+}
+
 // Interfaz para la creación de servicios
 export interface CreateServicioDTO {
   nombre: string;
-  precioPorMes: number | string;
-  precioPorTrimestre: number | string;
-  precioPorAnio: number | string;
+  precioPorMes: number | string | Decimal;
+  precioPorTrimestre: number | string | Decimal;
+  precioPorAnio: number | string | Decimal;
   descripcion: string;
   categoria: string;
   fechaDisponibilidadInicio?: Date | string | null;
@@ -22,9 +28,9 @@ export interface CreateServicioDTO {
 // Interfaz para la actualización de servicios (todos los campos opcionales)
 export interface UpdateServicioDTO {
   nombre?: string;
-  precioPorMes?: number | string;
-  precioPorTrimestre?: number | string;
-  precioPorAnio?: number | string;
+  precioPorMes?: number | string | Decimal;
+  precioPorTrimestre?: number | string | Decimal;
+  precioPorAnio?: number | string | Decimal;
   descripcion?: string;
   categoria?: string;
   fechaDisponibilidadInicio?: Date | string | null;
@@ -40,23 +46,103 @@ const servicioSchema = yup.object().shape({
     .required('El nombre es obligatorio')
     .max(100, 'El nombre no puede exceder los 100 caracteres'),
   
-  precioPorMes: yup.number()
+  precioPorMes: yup.mixed()
     .required('El precio mensual es obligatorio')
-    .positive('El precio debe ser positivo'),
+    .test('is-positive', 'El precio debe ser positivo', function(value: any) {
+      try {
+        return value && new Decimal(value).isPositive();
+      } catch (error) {
+        return false;
+      }
+    }),
   
-  precioPorTrimestre: yup.number()
+  precioPorTrimestre: yup.mixed()
     .required('El precio trimestral es obligatorio')
-    .positive('El precio debe ser positivo'),
+    .test('is-positive', 'El precio debe ser positivo', function(value: any) {
+      try {
+        return value && new Decimal(value).isPositive();
+      } catch (error) {
+        return false;
+      }
+    }),
   
-  precioPorAnio: yup.number()
+  precioPorAnio: yup.mixed()
     .required('El precio anual es obligatorio')
-    .positive('El precio debe ser positivo'),
-  
+    .test('is-positive', 'El precio debe ser positivo', function(value: any) {
+      try {
+        return value && new Decimal(value).isPositive();
+      } catch (error) {
+        return false;
+      }
+    }),
+
   descripcion: yup.string()
     .required('La descripción es obligatoria'),
-  
+
   categoria: yup.string()
     .required('La categoría es obligatoria')
+    .max(50, 'La categoría no puede exceder los 50 caracteres'),
+
+  fechaDisponibilidadInicio: yup.date()
+    .nullable(),
+
+  fechaDisponibilidadFin: yup.date()
+    .nullable()
+    .min(
+      yup.ref('fechaDisponibilidadInicio'),
+      'La fecha de fin debe ser posterior a la fecha de inicio'
+    ),
+
+  activo: yup.boolean()
+    .default(true),
+
+  stock: yup.number()
+    .nullable()
+    .min(0, 'El stock no puede ser negativo'),
+
+  imagenUrl: yup.string()
+    .nullable()
+    .url('La URL de la imagen debe ser válida')
+});
+
+// Esquema para actualizar un servicio (similar pero con campos opcionales)
+const updateServicioSchema = yup.object().shape({
+  nombre: yup.string()
+    .max(100, 'El nombre no puede exceder los 100 caracteres'),
+  
+  precioPorMes: yup.mixed()
+    .test('is-positive', 'El precio debe ser positivo', function(value: any) {
+      if (value === undefined || value === null) return true;
+      try {
+        return new Decimal(value).isPositive();
+      } catch (error) {
+        return false;
+      }
+    }),
+  
+  precioPorTrimestre: yup.mixed()
+    .test('is-positive', 'El precio debe ser positivo', function(value: any) {
+      if (value === undefined || value === null) return true;
+      try {
+        return new Decimal(value).isPositive();
+      } catch (error) {
+        return false;
+      }
+    }),
+  
+  precioPorAnio: yup.mixed()
+    .test('is-positive', 'El precio debe ser positivo', function(value: any) {
+      if (value === undefined || value === null) return true;
+      try {
+        return new Decimal(value).isPositive();
+      } catch (error) {
+        return false;
+      }
+    }),
+  
+  descripcion: yup.string(),
+  
+  categoria: yup.string()
     .max(50, 'La categoría no puede exceder los 50 caracteres'),
   
   fechaDisponibilidadInicio: yup.date()
@@ -69,8 +155,7 @@ const servicioSchema = yup.object().shape({
       'La fecha de fin debe ser posterior a la fecha de inicio'
     ),
   
-  activo: yup.boolean()
-    .default(true),
+  activo: yup.boolean(),
   
   stock: yup.number()
     .nullable()
@@ -79,17 +164,6 @@ const servicioSchema = yup.object().shape({
   imagenUrl: yup.string()
     .nullable()
     .url('La URL de la imagen debe ser válida')
-});
-
-// Esquema para actualizar un servicio (similar pero con campos opcionales)
-const updateServicioSchema = servicioSchema.clone().shape({
-  nombre: yup.string()
-    .max(100, 'El nombre no puede exceder los 100 caracteres'),
-  precioPorMes: yup.number().positive('El precio debe ser positivo'),
-  precioPorTrimestre: yup.number().positive('El precio debe ser positivo'),
-  precioPorAnio: yup.number().positive('El precio debe ser positivo'),
-  descripcion: yup.string(),
-  categoria: yup.string().max(50, 'La categoría no puede exceder los 50 caracteres')
 }).noUnknown(true, 'No se permiten campos desconocidos');
 
 export default class ServicioService {
@@ -111,7 +185,7 @@ export default class ServicioService {
     if (!id || id.trim() === '') {
       throw new BadRequestError('Se requiere un ID válido');
     }
-    
+
     return ServicioRepository.findById(id);
   }
 
@@ -122,35 +196,38 @@ export default class ServicioService {
    */
   static async crearServicio(data: CreateServicioDTO): Promise<IServicio> {
     try {
-      // Validar datos
-      const servicioData = await servicioSchema.validate(data, {
+      // Validar datos básicos primero
+      const validatedData = await servicioSchema.validate(data, {
         abortEarly: false,
         stripUnknown: true
       });
       
+      // Crear un nuevo objeto con los valores convertidos a Decimal
+      const servicioData: any = { ...validatedData };
+      
       // Convertir precios a Decimal para precisión
       if (servicioData.precioPorMes) {
-        servicioData.precioPorMes = (servicioData.precioPorMes);
+        servicioData.precioPorMes = new Decimal(servicioData.precioPorMes);
       }
       if (servicioData.precioPorTrimestre) {
-        servicioData.precioPorTrimestre = (servicioData.precioPorTrimestre);
+        servicioData.precioPorTrimestre = new Decimal(servicioData.precioPorTrimestre);
       }
       if (servicioData.precioPorAnio) {
-        servicioData.precioPorAnio = (servicioData.precioPorAnio);
+        servicioData.precioPorAnio = new Decimal(servicioData.precioPorAnio);
       }
-      
+
       // Crear servicio
       return ServicioRepository.create(servicioData);
     } catch (error: any) {
       if (error.name === 'ValidationError') {
-        const errors = error.errors.map((err: string) => ({
+        const errors: ErrorDetail[] = error.errors.map((err: string) => ({
           field: err.substring(0, err.indexOf(':')),
           message: err.substring(err.indexOf(':') + 1).trim()
         }));
-        
-        throw new ValidationError('Error de validación', errors);
+
+        throw new ValidationError('Error de validación', errors as any);
       }
-      
+
       throw error;
     }
   }
@@ -165,27 +242,30 @@ export default class ServicioService {
     try {
       // Verificar que el servicio existe
       await this.getServicioById(id);
-      
+
       // Validar datos de actualización
-      const servicioData = await updateServicioSchema.validate(data, {
+      const validatedData = await updateServicioSchema.validate(data, {
         abortEarly: false,
         stripUnknown: true
       });
       
+      // Crear un nuevo objeto con los valores convertidos a Decimal
+      const servicioData: any = { ...validatedData };
+
       // Convertir precios a Decimal para precisión
-      if (servicioData.precioPorMes) {
+      if (servicioData.precioPorMes !== undefined) {
         servicioData.precioPorMes = new Decimal(servicioData.precioPorMes);
       }
-      if (servicioData.precioPorTrimestre) {
+      if (servicioData.precioPorTrimestre !== undefined) {
         servicioData.precioPorTrimestre = new Decimal(servicioData.precioPorTrimestre);
       }
-      if (servicioData.precioPorAnio) {
+      if (servicioData.precioPorAnio !== undefined) {
         servicioData.precioPorAnio = new Decimal(servicioData.precioPorAnio);
       }
       
       // Establecer fecha de actualización
       servicioData.fechaActualizacion = new Date();
-      
+
       // Actualizar servicio
       return ServicioRepository.update(id, servicioData);
     } catch (error: any) {
@@ -194,10 +274,10 @@ export default class ServicioService {
           field: err.substring(0, err.indexOf(':')),
           message: err.substring(err.indexOf(':') + 1).trim()
         }));
-        
-        throw new ValidationError('Error de validación', errors);
+
+        throw new ValidationError('Error de validación', errors as any);
       }
-      
+
       throw error;
     }
   }
@@ -212,7 +292,7 @@ export default class ServicioService {
     if (!id || id.trim() === '') {
       throw new BadRequestError('Se requiere un ID válido');
     }
-    
+
     return ServicioRepository.delete(id, hard);
   }
 
@@ -234,7 +314,7 @@ export default class ServicioService {
     if (!categoria || categoria.trim() === '') {
       throw new BadRequestError('Se requiere una categoría válida');
     }
-    
+
     return ServicioRepository.findByCategoria(categoria, options);
   }
 
@@ -248,8 +328,7 @@ export default class ServicioService {
     if (!query || query.trim() === '') {
       throw new BadRequestError('Se requiere un término de búsqueda');
     }
-    
+
     return ServicioRepository.search(query, options);
   }
 }
- 

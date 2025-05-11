@@ -51,7 +51,7 @@ export default class ServicioRepository {
    */
   static async findAll(options: PaginationOptions = {}): Promise<ServiciosResult> {
     await this.init();
-    
+
     const {
       page = 1,
       limit = parseInt(process.env.DEFAULT_PAGE_SIZE || '10'),
@@ -62,46 +62,50 @@ export default class ServicioRepository {
       search,
       disponibleAhora
     } = options;
-    
+
     const pageNum = typeof page === 'string' ? parseInt(page) : page;
     const limitNum = typeof limit === 'string' ? parseInt(limit) : limit;
-    
+
     const skip = (pageNum - 1) * limitNum;
     const sortDirection = order === 'desc' ? -1 : 1;
-    const sortOptions = { [sort]: sortDirection };
-    
+
     // Construir el filtro
     const filter: FilterQuery<IServicio> = {};
-    
+
     if (activo !== undefined) {
       filter.activo = activo === 'true' || activo === true;
     }
-    
+
     if (categoria) {
       filter.categoria = categoria;
     }
-    
+
     if (search) {
       filter.$or = [
         { nombre: { $regex: search, $options: 'i' } },
         { descripcion: { $regex: search, $options: 'i' } }
       ];
     }
-    
+
     if (disponibleAhora === 'true' || disponibleAhora === true) {
       const now = new Date();
       filter.$and = [
-        { $or: [
-          { fechaDisponibilidadInicio: { $lte: now } },
-          { fechaDisponibilidadInicio: null }
-        ]},
-        { $or: [
-          { fechaDisponibilidadFin: { $gte: now } },
-          { fechaDisponibilidadFin: null }
-        ]}
+        {
+          $or: [
+            { fechaDisponibilidadInicio: { $lte: now } },
+            { fechaDisponibilidadInicio: null }
+          ]
+        },
+        {
+          $or: [
+            { fechaDisponibilidadFin: { $gte: now } },
+            { fechaDisponibilidadFin: null }
+          ]
+        }
       ];
     }
-    
+    const sortOptions: Record<string, 1 | -1> = {};
+    sortOptions[sort] = sortDirection as 1 | -1;
     // Ejecutar la consulta
     const [servicios, total] = await Promise.all([
       Servicio.find(filter)
@@ -111,12 +115,12 @@ export default class ServicioRepository {
         .lean(),
       Servicio.countDocuments(filter)
     ]);
-    
+
     // Calcular metadatos de paginación
     const totalPages = Math.ceil(total / limitNum);
     const hasNext = pageNum < totalPages;
     const hasPrev = pageNum > 1;
-    
+
     return {
       servicios,
       pagination: {
@@ -138,13 +142,13 @@ export default class ServicioRepository {
    */
   static async findById(id: string): Promise<IServicio> {
     await this.init();
-    
+
     const servicio = await Servicio.findById(id).lean();
-    
+
     if (!servicio) {
       throw new NotFoundError(`Servicio con ID ${id} no encontrado`);
     }
-    
+
     return servicio as IServicio;
   }
 
@@ -155,13 +159,13 @@ export default class ServicioRepository {
    */
   static async create(data: Partial<IServicio>): Promise<IServicio> {
     await this.init();
-    
+
     const nuevoServicio = new Servicio({
       ...data,
       fechaCreacion: new Date(),
       fechaActualizacion: new Date()
     });
-    
+
     await nuevoServicio.save();
     return nuevoServicio.toJSON();
   }
@@ -175,13 +179,13 @@ export default class ServicioRepository {
    */
   static async update(id: string, data: Partial<IServicio>): Promise<IServicio> {
     await this.init();
-    
+
     const servicio = await Servicio.findById(id);
-    
+
     if (!servicio) {
       throw new NotFoundError(`Servicio con ID ${id} no encontrado`);
     }
-    
+
     // Actualizar propiedades
     Object.keys(data).forEach(key => {
       if (key !== 'id' && key !== '_id' && key !== 'fechaCreacion') {
@@ -189,9 +193,9 @@ export default class ServicioRepository {
         servicio[key] = data[key as keyof IServicio];
       }
     });
-    
+
     servicio.fechaActualizacion = new Date();
-    
+
     await servicio.save();
     return servicio.toJSON();
   }
@@ -205,13 +209,13 @@ export default class ServicioRepository {
    */
   static async delete(id: string, hard: boolean = false): Promise<DeleteResult> {
     await this.init();
-    
+
     const servicio = await Servicio.findById(id);
-    
+
     if (!servicio) {
       throw new NotFoundError(`Servicio con ID ${id} no encontrado`);
     }
-    
+
     if (hard) {
       // Borrado físico
       await Servicio.deleteOne({ _id: id });
@@ -231,7 +235,7 @@ export default class ServicioRepository {
    */
   static async getCategorias(): Promise<string[]> {
     await this.init();
-    
+
     const categorias = await Servicio.distinct('categoria', { activo: true });
     return categorias;
   }
