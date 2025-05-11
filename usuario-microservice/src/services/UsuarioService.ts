@@ -12,20 +12,28 @@ export class UsuarioService {
   }
 
   // Registro de usuario
-  async registro(userData: { nombre: string; email: string; password: string }): Promise<{ usuario: IUsuario; token: string }> {
+  async registro(userData: {
+    nombre: string;
+    email: string;
+    password: string;
+    tipoUsuario?: TipoUsuario
+  }): Promise<{ usuario: IUsuario; token: string }> {
     // Asegurar conexión a la BD
     await connectDB();
-    
+
     // Verificar si el email ya existe
     const existeEmail = await this.usuarioRepository.existsByEmail(userData.email);
     if (existeEmail) {
       throw new Error('El email ya está registrado');
     }
 
+    // Usar el tipo de usuario proporcionado o el valor por defecto si no se proporciona
+    const tipoUsuario = userData.tipoUsuario || TipoUsuario.COMPRADOR;
+
     // Crear usuario
     const nuevoUsuario = await this.usuarioRepository.create({
       ...userData,
-      tipo: TipoUsuario.COMPRADOR
+      tipo: tipoUsuario
     });
 
     // Generar token
@@ -38,7 +46,7 @@ export class UsuarioService {
   async inicioSesion(email: string, password: string): Promise<{ usuario: IUsuario; token: string }> {
     // Asegurar conexión a la BD
     await connectDB();
-    
+
     // Buscar usuario por email
     const usuario = await this.usuarioRepository.findByEmail(email);
     if (!usuario) {
@@ -104,7 +112,7 @@ export class UsuarioService {
   // Generar token JWT
   private generarToken(usuario: IUsuario): string {
     return jwt.sign(
-      { 
+      {
         id: usuario.id,
         nombre: usuario.nombre,
         email: usuario.email,

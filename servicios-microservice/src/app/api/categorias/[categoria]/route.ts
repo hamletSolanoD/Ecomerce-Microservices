@@ -2,20 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withErrorHandler, BadRequestError } from '@/middleware/errorHandler';
 import ServicioService from '@/services/servicioService';
 
-// Ajuste del tipo de parámetros para coincidir con RouteHandler
-type ParamsWithCategoria = {
-  params: {
-    categoria: string;
-  };
-};
-
 /**
  * GET /api/categorias/[categoria]
  * Obtiene servicios por categoría
  */
 export const GET = withErrorHandler(async (req: NextRequest, context?: { params: Record<string, string> }) => {
   try {
-    // Obtener la categoría del contexto de forma segura
+    console.log(context?.params?.categoria)
     const categoria = context?.params?.categoria;
     
     if (!categoria || categoria.trim() === '') {
@@ -45,7 +38,7 @@ export const GET = withErrorHandler(async (req: NextRequest, context?: { params:
     };
     
     const result = await ServicioService.getServiciosPorCategoria(categoriaDecodificada, options);
-    
+    console.log(result)
     return NextResponse.json(result);
   } catch (error: any) {
     console.error(`Error al obtener servicios por categoría: ${error.message}`, error);

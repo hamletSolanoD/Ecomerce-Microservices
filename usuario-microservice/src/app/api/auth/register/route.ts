@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
   try {
     // Conectar a la base de datos
     await connectDB();
-    
+
     const body = await req.json();
 
     // Validar datos requeridos
@@ -42,7 +42,9 @@ export async function POST(req: NextRequest) {
     const { usuario, token } = await usuarioService.registro({
       nombre: body.nombre,
       email: body.email,
-      password: body.password
+      password: body.password,
+      tipoUsuario: body.tipoUsuario
+
     });
 
     return NextResponse.json(

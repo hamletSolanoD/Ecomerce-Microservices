@@ -6,15 +6,19 @@ const JWT_SECRET = process.env.JWT_SECRET;
 // Interfaces para representar la información del usuario y resultados de verificación
 export interface UserInfo {
   id: string;
-  role: string;
+  nombre: string;
+  email: string;
+  tipo: string;
 }
 
 interface AuthResult {
   error: boolean;
   status?: number;
   message?: string;
-  userId?: string;
-  role?: string;
+  id?: string;
+  nombre?: string;
+  email?: string;
+  tipo?: string;
 }
 
 // Extender NextRequest para incluir el objeto user
@@ -60,11 +64,14 @@ export async function verifyAuth(request: NextRequest): Promise<AuthResult> {
     try {
       // Verificar token
       const decoded = jwt.verify(token, JWT_SECRET as string) as jwt.JwtPayload;
+      console.log("Decoded", decoded);
       
       return {
         error: false,
-        userId: decoded.userId as string,
-        role: decoded.role as string || 'user'
+        id: decoded.id as string,
+        nombre: decoded.nombre as string,
+        email: decoded.email as string,
+        tipo: decoded.tipo as string || 'COMPRADOR'
       };
     } catch (error) {
       console.error('Error verificando JWT:', error);
@@ -108,8 +115,10 @@ export function withAuth(handler: RouteHandler): RouteHandler {
     // Añadir la información del usuario a la solicitud
     Object.defineProperty(requestWithUser, 'user', {
       value: {
-        id: authResult.userId,
-        role: authResult.role
+        id: authResult.id,
+        nombre: authResult.nombre,
+        email: authResult.email,
+        tipo: authResult.tipo
       },
       writable: false
     });
@@ -127,6 +136,7 @@ export function withAuth(handler: RouteHandler): RouteHandler {
 export function withAdminAuth(handler: RouteHandler): RouteHandler {
   return async (request, params) => {
     const authResult = await verifyAuth(request);
+    console.log("Auth result:", authResult);
     
     if (authResult.error) {
       return NextResponse.json(
@@ -135,7 +145,7 @@ export function withAdminAuth(handler: RouteHandler): RouteHandler {
       );
     }
     
-    if (authResult.role !== 'admin') {
+    if (authResult.tipo !== 'ADMIN') {
       return NextResponse.json(
         { error: 'Acceso denegado. Se requieren privilegios de administrador' },
         { status: 403 }
@@ -150,8 +160,10 @@ export function withAdminAuth(handler: RouteHandler): RouteHandler {
     // Añadir la información del usuario a la solicitud
     Object.defineProperty(requestWithUser, 'user', {
       value: {
-        id: authResult.userId,
-        role: authResult.role
+        id: authResult.id,
+        nombre: authResult.nombre,
+        email: authResult.email,
+        tipo: authResult.tipo
       },
       writable: false
     });
