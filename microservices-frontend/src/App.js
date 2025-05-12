@@ -8,12 +8,14 @@ import Register from './components/auth/Register';
 import ServicesList from './components/services/ServicesList';
 import Cart from './components/cart/Cart';
 import MyServices from './components/subscriptions/MyServices';
+import LandingPage from './components/common/LandingPage';
 
 function App() {
   return (
     <AuthProvider>
       <Router>
         <Routes>
+          <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route
@@ -46,7 +48,6 @@ function App() {
               </ProtectedRoute>
             }
           />
-          <Route path="/" element={<Navigate to="/services" />} />
         </Routes>
       </Router>
     </AuthProvider>
