@@ -35,7 +35,7 @@ export const cartService = {
   },
 
   processCheckout: async () => {
-    const response = await api.post('/carrito/procesar-compra');
+    const response = await api.post('/procesar-compra');
     return response.data;
   },
 

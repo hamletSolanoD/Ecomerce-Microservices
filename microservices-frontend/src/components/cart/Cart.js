@@ -30,7 +30,6 @@ const Cart = () => {
     if (!window.confirm('¿Estás seguro de que quieres eliminar este item?')) {
       return;
     }
-
     try {
       await cartService.removeFromCart(itemId);
       loadCart();
