@@ -1,9 +1,9 @@
 import { CarritoRepository } from '../repositories/CarritoRepository';
-import { 
-  EstadoCarrito, 
-  TipoPlan, 
-  CreateCarritoDTO, 
-  UpdateCarritoDTO, 
+import {
+  EstadoCarrito,
+  TipoPlan,
+  CreateCarritoDTO,
+  UpdateCarritoDTO,
   ICarritoCompra,
   IUsuarioBasico,
   IServicioBasico,
@@ -52,24 +52,24 @@ export class CarritoService {
     if (!value) {
       throw new Error('Precio no disponible');
     }
-    
+
     // Si ya es un Decimal
     if (value instanceof Decimal) {
       return value;
     }
-    
+
     // Si es un objeto (posiblemente serializado de MongoDB)
     if (typeof value === 'object') {
       // MongoDB $numberDecimal format - Este es el caso principal
       if (value.$numberDecimal) {
         return new Decimal(value.$numberDecimal);
       }
-      
+
       // Si es un objeto con propiedades numéricas (objeto Decimal serializado)
       if (value.d && Array.isArray(value.d)) {
         return new Decimal(value.toString());
       }
-      
+
       // Último recurso: intentar convertir usando valueOf si existe
       if (value.valueOf && typeof value.valueOf === 'function') {
         const val = value.valueOf();
@@ -77,10 +77,10 @@ export class CarritoService {
           return new Decimal(val);
         }
       }
-      
+
       throw new Error(`No se puede parsear el objeto precio: ${JSON.stringify(value)}`);
     }
-    
+
     // Si es string o number, usar directamente
     return new Decimal(value);
   }
@@ -130,7 +130,7 @@ export class CarritoService {
 
   // Enriquecer items del carrito con datos de usuario y servicio
   private async enriquecerCarritoItems(
-    items: ICarritoCompraDocument[], 
+    items: ICarritoCompraDocument[],
     token: string
   ): Promise<ICarritoCompra[]> {
     const itemsEnriquecidos: ICarritoCompra[] = [];
@@ -138,15 +138,16 @@ export class CarritoService {
     for (const item of items) {
       // Convertir documento a objeto plano
       const carritoItem = this.documentToCarritoCompra(item);
-      
+
       // Obtener datos del servicio (no requiere autenticación)
       const servicio = await this.obtenerServicio(item.servicioId);
-      
+
       // Obtener datos del usuario (solo para items de este usuario)
       const usuario = await this.obtenerUsuario(item.usuarioId, token);
 
       itemsEnriquecidos.push({
         ...carritoItem,
+        // Convertir null a undefined usando el operador ||
         usuario: usuario || undefined,
         servicio: servicio || undefined
       });
@@ -166,11 +167,8 @@ export class CarritoService {
       throw new Error('El servicio no está disponible');
     }
 
-    console.log('Debug - tipo de plan:', data.tipoPlan);
-
     // Obtener precio según el plan
     const precio = this.obtenerPrecioPorPlan(servicio, data.tipoPlan);
-    console.log('Debug - precio obtenido:', precio.toString());
 
     // Verificar si ya existe en el carrito
     const carritoExistente = await this.carritoRepository.findByUsuarioServicioEstado(
@@ -184,7 +182,7 @@ export class CarritoService {
       carritoExistente.tipoPlan = data.tipoPlan;
       carritoExistente.precioCompra = precio.toString();
       const itemActualizado = await carritoExistente.save();
-      
+
       return this.documentToCarritoCompra(itemActualizado);
     } else {
       // Crear nuevo item
@@ -192,7 +190,7 @@ export class CarritoService {
         ...data,
         precioCompra: precio.toString()
       });
-      
+
       return this.documentToCarritoCompra(nuevoDoc);
     }
   }
@@ -200,13 +198,13 @@ export class CarritoService {
   // Obtener carrito del usuario
   async obtenerCarrito(usuarioId: string, token: string): Promise<CarritoResponse> {
     const items = await this.carritoRepository.findByUsuarioAndEstado(usuarioId, EstadoCarrito.EN_PROCESO);
-    
+
     // Enriquecer con datos de servicios y usuario
     const itemsEnriquecidos = await this.enriquecerCarritoItems(items, token);
-    
+
     // Calcular total
     const total = await this.carritoRepository.calcularTotalCarrito(usuarioId);
-    
+
     return {
       items: itemsEnriquecidos,
       total,
@@ -217,19 +215,19 @@ export class CarritoService {
   // Eliminar item del carrito
   async eliminarDelCarrito(itemId: string, usuarioId: string): Promise<void> {
     const item = await this.carritoRepository.findById(itemId);
-    
+
     if (!item) {
       throw new Error('Item no encontrado en el carrito');
     }
-    
+
     if (item.usuarioId !== usuarioId) {
       throw new Error('No tienes permiso para eliminar este item');
     }
-    
+
     if (item.estado !== EstadoCarrito.EN_PROCESO) {
       throw new Error('Solo se pueden eliminar items en proceso');
     }
-    
+
     const eliminado = await this.carritoRepository.delete(itemId);
     if (!eliminado) {
       throw new Error('Error eliminando item del carrito');
@@ -240,17 +238,17 @@ export class CarritoService {
   async procesarCompra(usuarioId: string, token: string): Promise<{ mensaje: string; suscripciones: ICarritoCompra[] }> {
     // Verificar que hay items en el carrito
     const itemsCarrito = await this.carritoRepository.findByUsuarioAndEstado(usuarioId, EstadoCarrito.EN_PROCESO);
-    
+
     if (itemsCarrito.length === 0) {
       throw new Error('No hay items en el carrito');
     }
-    
+
     // Procesar la compra
     const suscripciones = await this.carritoRepository.procesarCompra(usuarioId);
-    
+
     // Enriquecer con datos de servicios
     const suscripcionesEnriquecidas = await this.enriquecerCarritoItems(suscripciones, token);
-    
+
     return {
       mensaje: 'Compra procesada exitosamente',
       suscripciones: suscripcionesEnriquecidas
@@ -260,16 +258,16 @@ export class CarritoService {
   // Obtener suscripciones del usuario
   async obtenerSuscripciones(usuarioId: string, incluirExpiradas: boolean = false): Promise<SuscripcionResponse> {
     let suscripciones;
-    
+
     if (incluirExpiradas) {
       suscripciones = await this.carritoRepository.findTodasSuscripciones(usuarioId);
     } else {
       suscripciones = await this.carritoRepository.findSuscripcionesActivas(usuarioId);
     }
-    
+
     // Convertir documentos a objetos planos
     const suscripcionesPlanas = suscripciones.map(doc => this.documentToCarritoCompra(doc));
-    
+
     return {
       suscripciones: suscripcionesPlanas,
       totalSuscripciones: suscripciones.length
@@ -294,7 +292,7 @@ export class CarritoService {
   // Job/Task para actualizar suscripciones expiradas
   async actualizarSuscripcionesExpiradas(): Promise<{ mensaje: string; actualizadas: number }> {
     const actualizadas = await this.carritoRepository.actualizarSuscripcionesExpiradas();
-    
+
     return {
       mensaje: `Suscripciones actualizadas: ${actualizadas}`,
       actualizadas
