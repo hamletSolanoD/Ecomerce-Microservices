@@ -8,22 +8,6 @@
 ![React](https://img.shields.io/badge/React-18%2B-blue)
 ![Licencia](https://img.shields.io/badge/Licencia-MIT-yellow)
 
-## 📋 Índice
-- [Descripción](#-descripción)
-- [Arquitectura](#-arquitectura)
-- [Microservicios](#-microservicios)
-- [Tecnologías](#-tecnologías)
-- [Instalación](#-instalación)
-- [Configuración](#-configuración)
-- [APIs](#-apis)
-- [Desarrollo](#-desarrollo)
-- [Flujos Principales](#-flujos-principales)
-- [Pruebas](#-pruebas)
-- [Despliegue](#-despliegue)
-- [Estructura de Carpetas](#-estructura-de-carpetas)
-- [Contribuir](#-contribuir)
-- [Licencia](#-licencia)
-
 ## 📝 Descripción
 
 ServiceHub es una plataforma moderna de e-commerce especializada en la venta y gestión de suscripciones a servicios digitales como hosting, servidores, bases de datos y otros servicios tecnológicos. Implementada como una arquitectura de microservicios, permite a los usuarios explorar un catálogo de productos, gestionar sus compras y administrar sus suscripciones.
@@ -65,7 +49,6 @@ Gestiona la autenticación y los perfiles de usuario del sistema.
 ### 2️⃣ Microservicio de Servicios (Puerto 3002)
 
 Administra el catálogo de servicios disponibles con capacidades avanzadas de búsqueda y filtrado.
-
 #### Características Técnicas
 - Validación de datos con Yup
 - Manejo preciso de valores monetarios con Decimal.js
@@ -82,14 +65,12 @@ Administra el catálogo de servicios disponibles con capacidades avanzadas de b�
 ### 3️⃣ Microservicio de Carrito (Puerto 3003)
 
 Gestiona el carrito de compras y las suscripciones de los usuarios.
-
 #### Características Técnicas
 - Sistema de suscripciones con fechas de expiración automáticas
 - Tipos de planes: Mensual, Trimestral, Anual
 - Estados de carrito: EN_PROCESO, COMPRADO, EXPIRADO
 - Verificación de acceso a servicios adquiridos
 - Comunicación con otros microservicios para datos enriquecidos
-
 #### Endpoints Principales
 - `GET /api/carrito`: Obtener carrito del usuario
 - `POST /api/carrito`: Agregar item al carrito
@@ -97,9 +78,7 @@ Gestiona el carrito de compras y las suscripciones de los usuarios.
 - `GET /api/suscripciones`: Obtener suscripciones del usuario
 
 ### 4️⃣ Frontend React
-
 Interfaz de usuario que integra todas las funcionalidades de los microservicios.
-
 #### Características Técnicas
 - Sistema de autenticación con persistencia en localStorage
 - Servicios para comunicación con microservicios
@@ -107,9 +86,7 @@ Interfaz de usuario que integra todas las funcionalidades de los microservicios.
 - Control de acceso basado en roles
 - Gestión de estado con Context API
 - Interceptores para tokens JWT
-
 ## 🛠️ Tecnologías
-
 ### Backend
 - **Node.js** (v16+): Entorno de ejecución para JavaScript
 - **NextJS** (v13+): Framework para APIs y SSR
@@ -128,39 +105,29 @@ Interfaz de usuario que integra todas las funcionalidades de los microservicios.
 - **Axios**: Cliente HTTP para comunicación con APIs
 
 ## 📦 Instalación
-
 ### Requisitos Previos
 - Node.js 16+
 - MongoDB (instalado localmente o instancia remota)
 - npm o yarn
-
-### Clonar el Repositorio
-
-```bash
-# Clonar el repositorio principal
-git clone https://github.com/usuario/servicehub.git
-cd servicehub
-```
-
 ### Instalar Dependencias
 
 Cada microservicio y el frontend necesitan tener sus dependencias instaladas por separado:
 
 ```bash
 # Microservicio de Usuarios
-cd microservicio-usuarios
+cd usuario-microservice
 npm install
 
 # Microservicio de Servicios
-cd ../microservicio-servicios
+cd servicios-microservice
 npm install
 
 # Microservicio de Carrito
-cd ../microservicio-carrito
+cd carrito-microservice
 npm install
 
 # Frontend
-cd ../frontend
+cd microservices-frontend
 npm install
 ```
 
@@ -172,34 +139,45 @@ Cada microservicio requiere su propio archivo `.env`. A continuación se muestra
 
 #### Microservicio de Usuarios (.env)
 ```
+# Puerto del servidor
 PORT=3001
-MONGODB_URI=mongodb://localhost:27017/servicehub-usuarios
-JWT_SECRET=tu_clave_secreta_jwt
-JWT_EXPIRATION=24h
-CORS_ORIGIN=http://localhost:3000
+# Conexión a MongoDB
+MONGODB_URI=
+# Secret para JWT
+JWT_SECRET=
+# Entorno
+NODE_ENV=
 ```
 
 #### Microservicio de Servicios (.env)
 ```
+# Configuración MongoDB
+MONGODB_URI=
+# Puerto del servidor
 PORT=3002
-MONGODB_URI=mongodb://localhost:27017/servicehub-servicios
-CORS_ORIGIN=http://localhost:3000
+# URL del microservicio de usuarios (para verificación de tokens)
+USERS_MICROSERVICE_URL=
+# Configuración de paginación por defecto
+DEFAULT_PAGE_SIZE=
+# Secret para JWT
+JWT_SECRET=
+# Entorno
+NODE_ENV=
 ```
 
 #### Microservicio de Carrito (.env)
 ```
+# Puerto del servidor
 PORT=3003
-MONGODB_URI=mongodb://localhost:27017/servicehub-carrito
-USERS_MICROSERVICE_URL=http://localhost:3001
-SERVICES_MICROSERVICE_URL=http://localhost:3002
-CORS_ORIGIN=http://localhost:3000
-```
-
-#### Frontend (.env)
-```
-REACT_APP_USERS_API=http://localhost:3001/api
-REACT_APP_SERVICES_API=http://localhost:3002/api
-REACT_APP_CART_API=http://localhost:3003/api
+# Conexión a MongoDB
+MONGODB_URI=
+# Secret para JWT (debe coincidir con el de usuarios)
+JWT_SECRET=
+# URLs de otros microservicios
+USERS_MICROSERVICE_URL=
+SERVICES_MICROSERVICE_URL=
+# Entorno
+NODE_ENV=
 ```
 
 ## 🔌 APIs
@@ -262,23 +240,22 @@ Authorization: Bearer <token>
 Cada microservicio debe iniciarse en una terminal separada:
 
 ```bash
-# Microservicio de Usuarios
-cd microservicio-usuarios
-npm run dev
+cd usuario-microservice
+npm start
 
 # Microservicio de Servicios
-cd microservicio-servicios
-npm run dev
+cd servicios-microservice
+npm start
 
 # Microservicio de Carrito
-cd microservicio-carrito
-npm run dev
+cd carrito-microservice
+npm start
 
 # Frontend
-cd frontend
+cd microservices-frontend
 npm start
-```
 
+```
 ### Puertos por Defecto
 - Microservicio de Usuarios: http://localhost:3001
 - Microservicio de Servicios: http://localhost:3002
@@ -291,39 +268,23 @@ npm start
 1. Usuario crea una cuenta o inicia sesión
 2. Sistema genera un token JWT
 3. Token se almacena en localStorage para persistencia
-
 ### 2. Exploración de Servicios
 1. Usuario navega por el catálogo de servicios
 2. Puede filtrar por categoría, buscar y paginar resultados
 3. Visualiza detalles de cada servicio
-
 ### 3. Compra de Servicios
 1. Usuario selecciona un servicio y el plan (Mensual/Trimestral/Anual)
 2. Servicio se agrega al carrito con estado EN_PROCESO
 3. Usuario procesa la compra
 4. Items pasan a estado COMPRADO con fecha de expiración calculada
-
 ### 4. Gestión de Suscripciones
 1. Usuario visualiza sus suscripciones activas
 2. Sistema muestra tiempo restante hasta expiración
 3. Al llegar la fecha de expiración, las suscripciones pasan a EXPIRADO
-
 ### 5. Administración (Solo ADMIN)
 1. Administradores pueden crear/editar/eliminar servicios
 2. Acceso a listado completo de usuarios
 3. Gestión del catálogo de productos
-
-## 🧪 Pruebas
-
-Para ejecutar las pruebas en cada microservicio:
-
-```bash
-# Ejecutar pruebas unitarias
-npm run test
-
-# Ejecutar pruebas con cobertura
-npm run test:coverage
-```
 
 ## 📂 Estructura de Carpetas
 
@@ -350,7 +311,6 @@ microservicio-usuarios/
 │   └── jwt.js
 └── ...
 ```
-
 ### Microservicio de Servicios
 ```
 microservicio-servicios/
@@ -371,7 +331,6 @@ microservicio-servicios/
 │   └── error.js
 └── ...
 ```
-
 ### Microservicio de Carrito
 ```
 microservicio-carrito/
@@ -392,7 +351,6 @@ microservicio-carrito/
 │   └── error.js
 └── ...
 ```
-
 ### Frontend
 ```
 frontend/
@@ -419,26 +377,3 @@ frontend/
 │   └── index.js
 └── ...
 ```
-
-## 🤝 Contribuir
-
-1. Fork el repositorio
-2. Crea una rama para tu funcionalidad (`git checkout -b feature/nueva-funcionalidad`)
-3. Haz commit de tus cambios (`git commit -m 'Añadir nueva funcionalidad'`)
-4. Push a la rama (`git push origin feature/nueva-funcionalidad`)
-5. Crea un Pull Request
-
-### Guía de Estilo
-- Indentación con 2 espacios
-- Nombres de variables y funciones en camelCase
-- Clases en PascalCase
-- Utilizar async/await para código asíncrono
-- Añadir comentarios para lógica compleja
-
-## 📄 Licencia
-
-Este proyecto está licenciado bajo la Licencia MIT - ver el archivo [LICENSE.md](LICENSE.md) para más detalles.
-
----
-
-Desarrollado con ❤️ por [Tu Nombre/Equipo]
