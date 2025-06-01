@@ -14,6 +14,8 @@ ServiceHub es una plataforma moderna de e-commerce especializada en la venta y g
 
 La plataforma se compone de tres microservicios backend independientes y un frontend React, todos comunicándose entre sí a través de APIs RESTful. Cada microservicio cuenta con su propia base de datos MongoDB, asegurando la desacoplación y escalabilidad del sistema.
 
+[![Demo Video](https://img.youtube.com/vi/1qwiOr-VGPA/0.jpg)](https://www.youtube.com/watch?v=1qwiOr-VGPA)
+
 ## 🏗️ Arquitectura
 
 ServiceHub implementa una arquitectura de microservicios moderna con:
